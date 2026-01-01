@@ -11,36 +11,63 @@ variable "project_name" {
 }
 
 variable "project_name_short" {
-  description = "A short name or abbreviation for the project, used for resource naming."
+  description = "A short name for the project (for resources with name limits)."
   type        = string
   default     = "ara"
 }
 
-variable "ecr_image_uri" {
-  description = "The full URI of the Docker image in ECR including the tag (e.g., public.ecr.aws/alias/repo:latest)."
-  type        = string
-  # This must be provided by the user or via -var option, as it's unique to your ECR repo.
-  # Example: "public.ecr.aws/x5h9x8z0/prasadjs178/mlops-project:latest"
-}
-
-variable "model_s3_bucket" {
-  description = "The name of the S3 bucket where the model is stored."
+# --- API Configuration ---
+variable "api_image_uri" {
+  description = "The Docker image URI for the FastAPI server."
   type        = string
 }
 
-variable "model_s3_key_prefix" {
-  description = "The S3 key prefix (path) to the model files within the bucket."
-  type        = string
-}
-
-variable "ecs_task_cpu" {
-  description = "The amount of CPU to allocate to the ECS task (in CPU units)."
+variable "api_cpu" {
+  description = "CPU units for the API task (1024 = 1 vCPU)."
   type        = number
-  default     = 1024 # 1 vCPU
+  default     = 512  # 0.5 vCPU - sufficient for API
 }
 
-variable "ecs_task_memory" {
-  description = "The amount of memory to allocate to the ECS task (in MiB)."
+variable "api_memory" {
+  description = "Memory for the API task in MiB."
   type        = number
-  default     = 8192 # 8GB
-} 
+  default     = 1024  # 1GB - sufficient for API
+}
+
+# --- Worker Configuration ---
+variable "deploy_gpu_worker" {
+  description = "Whether to deploy the GPU worker EC2 instance. Set to false to save costs when not needed."
+  type        = bool
+  default     = false  # Disabled by default to save costs
+}
+
+variable "worker_image_uri" {
+  description = "The Docker image URI for the vLLM worker."
+  type        = string
+  default     = ""  # Optional, only needed if deploy_gpu_worker is true
+}
+
+variable "gpu_instance_type" {
+  description = "EC2 instance type for GPU worker. g4dn.xlarge is cheapest with NVIDIA T4."
+  type        = string
+  default     = "g4dn.xlarge"  # NVIDIA T4 16GB, ~$0.15/hr spot
+}
+
+variable "ssh_key_name" {
+  description = "Name of the SSH key pair for accessing the GPU worker (optional)."
+  type        = string
+  default     = ""
+}
+
+# --- Model Configuration ---
+variable "model_name" {
+  description = "Hugging Face model name for vLLM."
+  type        = string
+  default     = "Qwen/Qwen2.5-1.5B-Instruct"  # Small model that fits on T4
+}
+
+variable "model_max_length" {
+  description = "Maximum sequence length for the model."
+  type        = number
+  default     = 4096
+}

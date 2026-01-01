@@ -1,0 +1,9 @@
+pyproject.toml
+src/api.py
+src/models.py
+src/worker.py
+src/AI_Research_Assistant.egg-info/PKG-INFO
+src/AI_Research_Assistant.egg-info/SOURCES.txt
+src/AI_Research_Assistant.egg-info/dependency_links.txt
+src/AI_Research_Assistant.egg-info/requires.txt
+src/AI_Research_Assistant.egg-info/top_level.txt

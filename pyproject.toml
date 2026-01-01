@@ -1,27 +1,28 @@
 [project]
 name = "AI-Research-Assistant"
-version = "0.1.0"
-description = "Default template for PDM package"
+version = "0.2.0"
+description = "LLM Inference API with vLLM and async Redis queue"
 authors = [
     {name = "Prasad-178", email = "prasadjs178@gmail.com"},
 ]
 dependencies = [
-    "langgraph>=0.3.21", 
-    "openai>=1.69.0", 
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.23.0",
-    "boto3>=1.28.0",
+    "redis>=5.0.0",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
-    "transformers>=4.40.0",
-    "torch>=2.1.0",
-    "accelerate>=0.29.0",
-    "bitsandbytes>=0.41.0"
+    "httpx>=0.25.0",
 ]
 requires-python = "==3.10.*"
 readme = "README.md"
 license = {text = "MIT"}
 
+[project.optional-dependencies]
+# Worker dependencies (GPU instance only)
+worker = [
+    "vllm>=0.4.0",
+    "torch>=2.1.0",
+]
 
 [tool.pdm]
 distribution = false

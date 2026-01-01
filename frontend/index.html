@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Research Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border: #27272a;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --user-bubble: #3730a3;
+            --assistant-bubble: #1e1e2e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+        }
+
+        /* Header */
+        header {
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .logo h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .status-dot.healthy { background: var(--success); }
+        .status-dot.degraded { background: var(--warning); }
+        .status-dot.unhealthy { background: var(--error); }
+
+        /* Main Chat Area */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 2rem;
+        }
+
+        .message {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .user .avatar {
+            background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+        }
+
+        .assistant .avatar {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+        }
+
+        .bubble {
+            max-width: 75%;
+            padding: 1rem 1.25rem;
+            border-radius: 16px;
+            line-height: 1.6;
+        }
+
+        .user .bubble {
+            background: var(--user-bubble);
+            border-bottom-right-radius: 4px;
+        }
+
+        .assistant .bubble {
+            background: var(--assistant-bubble);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+
+        .bubble p {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .bubble .meta {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .bubble .task-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        /* Loading Animation */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 0.5rem 0;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            margin-top: auto;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            resize: none;
+            outline: none;
+            min-height: 24px;
+            max-height: 200px;
+            line-height: 1.5;
+        }
+
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-btn {
+            background: var(--accent);
+            border: none;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: var(--accent-hover);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .send-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Settings Row */
+        .settings-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+
+        .setting {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .setting input {
+            width: 60px;
+            padding: 0.25rem 0.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        .setting input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            max-width: 400px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Queue Info */
+        .queue-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-icon">🧠</div>
+            <h1>AI Research Assistant</h1>
+        </div>
+        <div class="status-badge">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Checking...</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="chat-container" id="chatContainer">
+            <div class="empty-state" id="emptyState">
+                <div class="icon">💬</div>
+                <h2>Start a conversation</h2>
+                <p>Send a message to the AI assistant. Your request will be queued and processed by vLLM.</p>
+            </div>
+        </div>
+
+        <div class="queue-info" id="queueInfo"></div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea 
+                    id="promptInput" 
+                    placeholder="Ask me anything..."
+                    rows="1"
+                ></textarea>
+                <button class="send-btn" id="sendBtn" title="Send message">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+            <div class="settings-row">
+                <div class="setting">
+                    <label for="maxTokens">Max tokens:</label>
+                    <input type="number" id="maxTokens" value="256" min="1" max="2048">
+                </div>
+                <div class="setting">
+                    <label for="temperature">Temperature:</label>
+                    <input type="number" id="temperature" value="0.7" min="0" max="2" step="0.1">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // DOM Elements
+        const chatContainer = document.getElementById('chatContainer');
+        const emptyState = document.getElementById('emptyState');
+        const promptInput = document.getElementById('promptInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const queueInfo = document.getElementById('queueInfo');
+        const maxTokensInput = document.getElementById('maxTokens');
+        const temperatureInput = document.getElementById('temperature');
+
+        // API Base URL (same origin)
+        const API_BASE = '';
+
+        // Track active tasks for polling
+        const activeTasks = new Map();
+
+        // Auto-resize textarea
+        promptInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+
+        // Send on Enter (Shift+Enter for newline)
+        promptInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        // Check health status periodically
+        async function checkHealth() {
+            try {
+                const res = await fetch(`${API_BASE}/health`);
+                const data = await res.json();
+                
+                statusDot.className = 'status-dot ' + data.status;
+                statusText.textContent = `API: ${data.api} | Redis: ${data.redis} | Worker: ${data.worker}`;
+            } catch (err) {
+                statusDot.className = 'status-dot unhealthy';
+                statusText.textContent = 'API unreachable';
+            }
+        }
+
+        // Check queue stats
+        async function checkQueueStats() {
+            try {
+                const res = await fetch(`${API_BASE}/queue/stats`);
+                const data = await res.json();
+                queueInfo.textContent = `${data.pending_tasks} task(s) in queue`;
+            } catch (err) {
+                queueInfo.textContent = '';
+            }
+        }
+
+        // Send a message
+        async function sendMessage() {
+            const prompt = promptInput.value.trim();
+            if (!prompt) return;
+
+            // Hide empty state
+            emptyState.style.display = 'none';
+
+            // Add user message
+            addMessage('user', prompt);
+
+            // Clear input
+            promptInput.value = '';
+            promptInput.style.height = 'auto';
+            sendBtn.disabled = true;
+
+            try {
+                // Submit task
+                const res = await fetch(`${API_BASE}/infer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        max_tokens: parseInt(maxTokensInput.value) || 256,
+                        temperature: parseFloat(temperatureInput.value) || 0.7,
+                        top_p: 0.9
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Failed to submit task');
+                }
+
+                // Add assistant message with loading state
+                const messageEl = addMessage('assistant', null, data.task_id, true);
+
+                // Start polling for result
+                pollForResult(data.task_id, messageEl);
+
+            } catch (err) {
+                addMessage('assistant', `Error: ${err.message}`, null, false);
+            }
+
+            sendBtn.disabled = false;
+        }
+
+        // Add a message to the chat
+        function addMessage(role, content, taskId = null, loading = false) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${role}`;
+
+            const avatar = role === 'user' ? '👤' : '🤖';
+            
+            let bubbleContent = '';
+            if (loading) {
+                bubbleContent = `
+                    <div class="typing-indicator">
+                        <span></span><span></span><span></span>
+                    </div>
+                `;
+            } else {
+                bubbleContent = `<p>${escapeHtml(content)}</p>`;
+            }
+
+            if (taskId) {
+                bubbleContent += `
+                    <div class="meta">
+                        <span class="task-id">${taskId.slice(0, 8)}...</span>
+                    </div>
+                `;
+            }
+
+            messageEl.innerHTML = `
+                <div class="avatar">${avatar}</div>
+                <div class="bubble" data-task-id="${taskId || ''}">${bubbleContent}</div>
+            `;
+
+            chatContainer.appendChild(messageEl);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            return messageEl;
+        }
+
+        // Update message content
+        function updateMessage(messageEl, content, status = null) {
+            const bubble = messageEl.querySelector('.bubble');
+            const taskId = bubble.dataset.taskId;
+            
+            let html = `<p>${escapeHtml(content)}</p>`;
+            if (taskId) {
+                html += `
+                    <div class="meta">
+                        <span class="task-id">${taskId.slice(0, 8)}...</span>
+                        ${status ? `<span>${status}</span>` : ''}
+                    </div>
+                `;
+            }
+            bubble.innerHTML = html;
+        }
+
+        // Poll for task result
+        async function pollForResult(taskId, messageEl) {
+            const maxAttempts = 120; // 2 minutes max
+            const pollInterval = 1000; // 1 second
+            let attempts = 0;
+
+            const poll = async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/task/${taskId}`);
+                    const data = await res.json();
+
+                    if (data.status === 'completed') {
+                        updateMessage(messageEl, data.result, '✓ completed');
+                        checkQueueStats();
+                        return;
+                    } else if (data.status === 'failed') {
+                        updateMessage(messageEl, `Error: ${data.error}`, '✗ failed');
+                        return;
+                    } else if (data.status === 'processing') {
+                        // Update to show processing status
+                        const bubble = messageEl.querySelector('.bubble');
+                        const meta = bubble.querySelector('.meta');
+                        if (meta) {
+                            meta.innerHTML = `
+                                <span class="task-id">${taskId.slice(0, 8)}...</span>
+                                <span>processing...</span>
+                            `;
+                        }
+                    }
+
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, pollInterval);
+                    } else {
+                        updateMessage(messageEl, 'Request timed out. The task may still be processing.', 'timeout');
+                    }
+                } catch (err) {
+                    updateMessage(messageEl, `Error checking status: ${err.message}`, 'error');
+                }
+            };
+
+            poll();
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        checkHealth();
+        checkQueueStats();
+        setInterval(checkHealth, 30000);
+        setInterval(checkQueueStats, 5000);
+    </script>
+</body>
+</html>
+
