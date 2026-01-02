@@ -1,0 +1,78 @@
+# Docker Compose for local development
+# This runs the API and Redis locally (without GPU worker)
+#
+# Usage:
+#   docker-compose up -d          # Start API + Redis
+#   docker-compose logs -f api    # View API logs
+#   docker-compose down           # Stop everything
+#
+# For GPU worker (requires NVIDIA Docker runtime):
+#   docker-compose --profile gpu up -d
+
+services:
+  # Redis - Message Queue
+  redis:
+    image: redis:7-alpine
+    container_name: ara-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI API Server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: ara-api
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      # Mount source for development (hot reload)
+      - ./src:/app/src:ro
+      - ./frontend:/app/frontend:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # vLLM Worker (GPU) - Only runs with --profile gpu
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: ara-worker
+    profiles:
+      - gpu
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MODEL_NAME=Qwen/Qwen2.5-1.5B-Instruct
+      - MODEL_MAX_LENGTH=4096
+      - GPU_MEMORY_UTILIZATION=0.85
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  redis_data:
+

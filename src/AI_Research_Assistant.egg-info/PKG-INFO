@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: AI-Research-Assistant
+Version: 0.2.0
+Summary: LLM Inference API with vLLM and async Redis queue
+Author-email: Prasad-178 <prasadjs178@gmail.com>
+License: MIT
+Requires-Python: ==3.10.*
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.100.0
+Requires-Dist: uvicorn[standard]>=0.23.0
+Requires-Dist: redis>=5.0.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: httpx>=0.25.0
+Provides-Extra: worker
+Requires-Dist: vllm>=0.4.0; extra == "worker"
+Requires-Dist: torch>=2.1.0; extra == "worker"
