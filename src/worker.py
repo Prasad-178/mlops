@@ -37,7 +37,7 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 
 # Model configuration
-MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-1.5B-Instruct")  # Small model for T4 GPU
+MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen3-1.7B")
 MODEL_MAX_LENGTH = int(os.getenv("MODEL_MAX_LENGTH", "4096"))
 GPU_MEMORY_UTILIZATION = float(os.getenv("GPU_MEMORY_UTILIZATION", "0.85"))
 

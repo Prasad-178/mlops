@@ -38,7 +38,7 @@ variable "api_memory" {
 variable "deploy_gpu_worker" {
   description = "Whether to deploy the GPU worker EC2 instance. Set to false to save costs when not needed."
   type        = bool
-  default     = false  # Disabled by default to save costs
+  default     = true
 }
 
 variable "worker_image_uri" {
@@ -63,7 +63,7 @@ variable "ssh_key_name" {
 variable "model_name" {
   description = "Hugging Face model name for vLLM."
   type        = string
-  default     = "Qwen/Qwen2.5-1.5B-Instruct"  # Small model that fits on T4
+  default     = "Qwen/Qwen3-1.7B"
 }
 
 variable "model_max_length" {
