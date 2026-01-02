@@ -1,51 +1,37 @@
 # Dockerfile for the vLLM Worker
-# This runs on a GPU instance and processes inference tasks from the Redis queue
-FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
-
-# Prevent interactive prompts
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Etc/UTC
+# Using PyTorch base with CUDA (lighter than full vLLM image)
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
 
 WORKDIR /app
 
-# Install system dependencies
+# Install build essentials and fix CUDA library links
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.10 \
-    python3.10-venv \
-    python3-pip \
-    git \
-    curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    gcc \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    # Create symlink for libcuda.so (needed by Triton)
+    && ln -sf /usr/local/cuda/compat/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so \
+    && ldconfig
 
-# Make python3.10 the default
-RUN ln -sf /usr/bin/python3.10 /usr/bin/python && \
-    ln -sf /usr/bin/pip3 /usr/bin/pip
-
-# Upgrade pip
-RUN pip install --no-cache-dir --upgrade pip
-
-# Install vLLM and dependencies
-# Note: vLLM has specific CUDA requirements, we install it directly
+# Install vLLM and Redis (no flash-attn to keep it light)
 RUN pip install --no-cache-dir \
     vllm>=0.4.0 \
-    redis>=5.0.0 \
-    pydantic>=2.0.0
-
-# Set CUDA environment variables
-ENV CUDA_HOME=/usr/local/cuda
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
+    redis>=5.0.0
 
 # Copy application code
 COPY src/ ./src/
 
-# Default model (can be overridden via environment variable)
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+# Force vLLM v0 engine (more stable on T4 GPUs)
+ENV VLLM_USE_V1=0
+
+# Default model configuration
 ENV MODEL_NAME="Qwen/Qwen2.5-1.5B-Instruct"
 ENV MODEL_MAX_LENGTH="4096"
 ENV GPU_MEMORY_UTILIZATION="0.85"
 
 # Run the worker
 CMD ["python", "src/worker.py"]
-

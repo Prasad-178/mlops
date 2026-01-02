@@ -74,6 +74,7 @@ def load_model() -> LLM:
             gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
             trust_remote_code=True,  # Some models need this
             dtype="half",  # Use FP16 for memory efficiency on T4
+            enforce_eager=True,  # Disable CUDA graph compilation (fixes T4 compatibility)
         )
         logger.info("Model loaded successfully!")
         return llm
