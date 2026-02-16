@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'src/**'
+      - 'frontend/**'
+      - 'terraform/**'
+      - 'Dockerfile.*'
+      - 'docker-compose.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/**'
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -135,7 +144,7 @@ jobs:
         run: |
           API_IMAGE="${{ env.ECR_PUBLIC_ALIAS }}/${{ env.ECR_REPOSITORY_NAME }}:api-${{ github.sha }}"
           WORKER_IMAGE="${{ env.ECR_PUBLIC_ALIAS }}/${{ env.ECR_REPOSITORY_NAME }}:worker-${{ github.sha }}"
-          
+
           terraform -chdir=./terraform apply -auto-approve \
             -var="api_image_uri=${API_IMAGE}" \
             -var="worker_image_uri=${WORKER_IMAGE}" \

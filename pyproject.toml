@@ -1,5 +1,5 @@
 [project]
-name = "AI-Research-Assistant"
+name = "FastInfer"
 version = "0.2.0"
 description = "LLM Inference API with vLLM and async Redis queue"
 authors = [
