@@ -1,4 +1,4 @@
-# AI Research Assistant
+# FastInfer
 
 A GPU-powered LLM inference API using **vLLM** with an asynchronous task queue (**Redis**) for scalable, production-ready AI chat.
 
